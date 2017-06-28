@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>创建气球</title>
+	<style>
+		*{
+		margin:0;
+		padding:0;
+		}
+		html,body{
+			height: 100%;
+		}
+		body{
+			background:no-repeat center center ;
+			background-size:100% 100%;
+			overflow: hidden;
+		}
+		.qiqiu{
+			width: 96px;
+			height: 123px;
+			background:url('img/balloon.png') no-repeat;
+			position: absolute;
+			top:500px;
+		}
+		.cloud{
+			width: 200px;
+			height:100px;
+			background:url(img/cloud.png) no-repeat ;
+			background-size:100% 100%;
+			position: absolute;
+		}
+		.blow{
+			animation: blow .5s forwards;
+		}
+		@keyframes blow {
+			0%{transform: scale(1);}
+			60%{
+				transform: scale(5);
+				opacity: 0.5;
+			}
+			100%{
+				transform: scale(5);
+				opacity: 0;
+			}
+		}
+	</style>
+</head>
+<body>
+	<audio src="img/gun.mp3" id = "audio"></audio>
+	<script>
+		var background = {
+			src :'img/bg.jpg',
+			newsrc : function(Nsrc){
+				var Nsrc = Nsrc||this.src;
+				document.body.style.backgroundImage = "url("+Nsrc+")";
+			}
+		}
+		function suiji(a,b){
+			return a + Math.round((b-a)*Math.random());
+		}
+		function Ballon (){
+			var that = this;
+			var pos = ["0px 0px","-96px 0px","-192px 0px","-288px 0px",
+					   "0px -123px","-96px -123px","-192px -123px","-288px -123px"]
+			this.ele = document.createElement('div');
+			this.ele.className="qiqiu";
+			this.initial();
+			this.ele.addEventListener('animationend',function(){
+				this.className = "qiqiu ";
+				that.initial();
+			})
+			document.body.appendChild(this.ele);
+
+		}
+		Ballon.prototype.godie = function(){
+			this.ele.className = "qiqiu blow";
+			point.add(this.num);
+		}
+		Ballon.prototype.move = function(){
+			// console.info(this.speed);
+			var currentTop = this.ele.offsetTop;
+			if(currentTop<-123){
+				this.initial();
+			}else{
+				currentTop-=this.speed+3;
+				this.ele.style.top =currentTop+"px";
+			}
+			
+		}
+		Ballon.prototype.initial = function(){
+			//气球的起始横坐标(随机值)
+			this.ele.style.left = (document.documentElement.offsetWidth - 96)*Math.random()+"px";
+			this.ele.style.top = suiji(500,600)+"px";
+			//气球的编号
+			this.num = suiji(1,8);
+			//气球上升的速度
+			this.speed = this.num;
+			//出现哪个气球
+			this.ele.style.backgroundPositionX =(this.num-1)%4  * -96 + "px";
+			this.ele.style.backgroundPositionY = (Math.ceil(this.num/4)-1) * -123 + "px";
+		}
+		function Cloud(){
+			this.ele = document.createElement('div');
+			this.ele.className = "cloud";
+			this.speed = suiji(1,6);
+			this.initial();
+			document.body.appendChild(this.ele);
+
+		}
+		Cloud.prototype.initial = function(){
+			this.ele.style.top = suiji(30,70)+"px";
+			this.ele.style.left = (document.documentElement.offsetWidth-200)*Math.random()+"px";		
+		}
+		Cloud.prototype.move = function(){
+			var currentleft = this.ele.offsetLeft;
+			// console.info(currentleft);
+			// console.info(this.speed)
+			if(currentleft<0||currentleft>document.body.offsetWidth-200){
+				// console.info('xiangfanle')
+				this.speed=this.speed*-1;
+				// console.info(this.speed)
+			}
+			currentleft=currentleft+this.speed;
+			this.ele.style.left =currentleft+"px";
+		}
+		var point={
+			ele:document.createElement('div'),
+			mark:0,
+			initial:function(){
+				this.ele.style.position = 'absolute';
+				this.ele.style.top = '20px';
+				this.ele.style.left = '20px';
+				document.body.appendChild(this.ele);
+			},
+			add:function(n){
+				this.mark += n;
+				this.ele.innerHTML = this.mark;
+			}
+		}
+		var gon = {
+			ele:document.createElement('div'),
+			w:96,
+			h:96,
+			initial :function(){
+				this.ele.style.width = this.w+"px";
+				this.ele.style.height = this.h+"px";
+				this.ele.style.background= "url('img/gun.png')";
+				this.ele.style.position = "absolute";
+				this.ele.style.zIndex = 100;
+				document.body.appendChild(this.ele);
+				var that = this;
+				document.body.addEventListener('mousemove',function(e){
+					// console.info(e.clientY,e.clientX)
+				that.ele.style.top = e.clientY-(that.h/2)+"px";
+				that.ele.style.left= e.clientX-(that.h/2)+"px";	
+				})
+			},
+			// move:function(a,b){
+
+			// }
+		}
+		var game = {
+			frameIndex :0,//控制气球分开跳出来
+			ballonoonnumber:5,//控制气球总数量
+			currentBallNumber:0,//当前的气球数量
+			actors:[],//演员的数组
+			start:function(){
+				var that = this;
+				background.newsrc();
+				point.initial();
+				gon.initial();
+				document.body.addEventListener('click',function(e){
+					// console.info(e.clientX,e.clientY);
+					document.getElementById('audio').currentTime=document.getElementById('audio').duration;
+					document.getElementById('audio').play();
+					
+					for(var i = 0;i<that.actors.length;i++){
+						var obj = that.actors[i];
+						if(obj.constructor == Ballon){
+							var x = obj.ele.offsetLeft+96/2;
+							var y = obj.ele.offsetTop+96/2;
+							if(Math.pow(x-e.clientX,2)+Math.pow(y-e.clientY,2)<Math.pow(48,2)){
+								obj.godie();
+							}
+						}
+					}
+				})
+				for(var i = 0;i<3;i++){
+						this.actors.push(new Cloud());
+					}
+				setInterval(function(){
+					that.frameIndex++;
+					if(that.frameIndex%10 == 0 &&that.currentBallNumber<that.ballonoonnumber){
+						that.currentBallNumber++;
+						that.actors.push(new Ballon());
+					}
+					for(var i = 0;i <that.actors.length;i++){
+						that.actors[i].move();
+					}
+				},50)
+			}
+		}
+		game.start();
+
+	</script>
+	
+</body>
+</html>
